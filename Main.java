@@ -1,8 +1,8 @@
 /*
  * The Course in Miracles is a book in the public domain that is made up of several parts.  
- * We are working with the Workbook part which consists of 361 lessons.  
- * This class scrapes and parses those lessons from a website and stores them in a JSON file 
- * on disk.
+ * I am working with the Workbook part which consists of 361 lessons. This program scrapes 
+ * and parses all the lessons and stores them to a file on disk as JSON objects so that I can 
+ * then load them into a Room/SQLite database during the installation process of an Android app. 
  */
 public class Main {
 
