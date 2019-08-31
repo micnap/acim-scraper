@@ -47,4 +47,5 @@ The Course in Miracles is a book in the public domain that is made up of several
 
 ## Single-threaded version
 The master branch is multithreaded.  For a single-threaded version, you can check out the vsinglethread tag:
-'git checkout vsinglethread'
+
+       git checkout vsinglethread
