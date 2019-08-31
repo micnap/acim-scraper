@@ -43,6 +43,11 @@ public class Lesson implements Comparable<Lesson> {
         this.html = html;
     }
     
+    @Override
+    public String toString() {
+        return id + ": " + title;
+    }
+    
     /*
      * Sorts an array of lessons by their ID ascending.
      */

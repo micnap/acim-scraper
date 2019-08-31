@@ -39,7 +39,7 @@ public class LessonScraper {
         domQuery = query;
     }
 
-    // Kicks off the various pieces of execution:
+    // Kicks off the central pieces of execution:
     // 1. Get the urls of the lessons.
     // 2. Parse the lessons into objects.
     // 3. Save the lesson objects to disk as JSON.
