@@ -48,9 +48,7 @@ public class Lesson implements Comparable<Lesson> {
         return id + ": " + title;
     }
     
-    /*
-     * Sorts an array of lessons by their ID ascending.
-     */
+    // Sorts an array of lessons by their ID ascending.
     @Override
     public int compareTo(Lesson lesson) {
         
