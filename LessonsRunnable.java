@@ -1,10 +1,4 @@
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jsoup.Jsoup;
@@ -14,17 +8,19 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 import org.jsoup.select.NodeFilter;
-import org.jsoup.select.NodeFilter.FilterResult;
 
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-
-
+/*
+ * This class makes the network requests to the individual lesson pages
+ * using LessonScraper.NUM_THREADS number of threads and saves the lesson 
+ * content to a thread-safe ArrayList.
+ */
 public class LessonsRunnable implements Runnable {
     
     Element lessonUrl;
     int lessonNum;
-    // Threadsafe version of ArrayList.
+    
+    // Temporary storage of lessons as they're gathered. 
+    // Thread-safe version of ArrayList.
     CopyOnWriteArrayList<Lesson> lessons = new CopyOnWriteArrayList<Lesson>(); 
     
     public LessonsRunnable(Element lessonUrl, int lessonNum, CopyOnWriteArrayList<Lesson> lessons) {
@@ -33,13 +29,11 @@ public class LessonsRunnable implements Runnable {
         this.lessons = lessons;
     }
 
-
     @Override
     public void run() {
-        // TODO Auto-generated method stub
-     // Log progress to the console.
-        System.out.println("Retrieving lesson " + lessonNum);
         
+        // Log progress to the console.
+        System.out.println("Retrieving lesson " + lessonNum);
         
         // Extracting lesson title from link to lesson.
         String lessonTitle = lessonUrl.text();
@@ -50,16 +44,16 @@ public class LessonsRunnable implements Runnable {
         // Add the lesson data to the arraylist
         lessons.add(new Lesson(lessonNum, lessonTitle, lessonHtml));
         
-        System.out.println(Thread.currentThread().getName() + " - Lesson " + lessonNum + ": " + lessonTitle);
-        
-        
+        // Debugging message
+        // System.out.println(Thread.currentThread().getName() + " - Lesson " + lessonNum + ": " + lessonTitle);
     }
     
- // Get the lesson's HTML content form the individual lesson page.
+    // Get the lesson's HTML content form the individual lesson page.
     private String getLessonHtml(String url) {
         
         // Load the lesson page.
         Document lessonPage = getPage(url);
+        
         // Parse the lesson content to give us only the piece we need.
         return parseLessonPage(lessonPage);
     }
@@ -75,7 +69,7 @@ public class LessonsRunnable implements Runnable {
         return null;
     }
     
- // Extracts and parses the lesson content from the lesson page.
+    // Extracts and parses the lesson content from the lesson page.
     private String parseLessonPage(Document lessonPage) {
         
         // Extract the lesson from the lesson page and remove its headerContainer.
@@ -120,7 +114,4 @@ public class LessonsRunnable implements Runnable {
             }
         });
     }
-    
-    
-
 }

@@ -8,19 +8,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Comment;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
-import org.jsoup.select.NodeFilter;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 
 /*
- * This is the class that does all the work of scraping the pages for the data.
+ * This class does all the work of kicking off the scraping to various threads and
+ * then saves the lesson data to disk.
  * Uses JSoup library for extracting and parsing the needed pieces of the lessons.
  * Uses Gson library for converting the Lesson objects to JSON. 
  */
@@ -29,7 +25,7 @@ public class LessonScraper {
     private String mainUrl;
     private String domQuery;
     
-    // Threadsafe version of ArrayList.
+    // Thread-safe version of ArrayList.
     CopyOnWriteArrayList<Lesson> lessons = new CopyOnWriteArrayList<Lesson>();
     
     private static final String OUTPUT_FILE_NAME = "lessons.json";
@@ -67,7 +63,8 @@ public class LessonScraper {
         return doc.select(domQuery);
     }
     
-    // Extracts and parses the lesson data from their individual pages.
+    // Extracts and parses the lesson data from their individual pages using NUM_THREADS threads.
+    // The use of threads reduces the overhead of the network requests significantly.
     private void getLessons(Elements lessonUrls) {
         
         ExecutorService executor = Executors.newFixedThreadPool(NUM_THREADS);
@@ -80,27 +77,22 @@ public class LessonScraper {
             Runnable worker = new LessonsRunnable(lessonUrls.get(i), i + 1, lessons);
             executor.execute(worker);
             
-
             // Debugging purposes.
-            if (i == 15) {
-                //break;
-            }
+            /*if (i == 15) {
+                break;
+            }*/
         }
         
         executor.shutdown();
-        // Wait until all threads are finish
-        while (!executor.isTerminated()) {
- 
-        }
-        System.out.println("\nFinished all threads");
+        while (!executor.isTerminated()) {}
     }
     
     
- // Converts an arraylist of lessons to JSON and writes to a file.
+    // Converts an arraylist of lessons to JSON and writes to a file.
     private void printJson(CopyOnWriteArrayList<Lesson> lessonsArrayList) {
 
         // Because of the multithreading, the lessons don't get added in the order of their id.
-        // Sort them by, then convert to json.
+        // Sort them then convert to json.
         Collections.sort(lessonsArrayList);
         String jsonOutPut = buildJsonOutput(lessonsArrayList);
         writeToFile(jsonOutPut);
@@ -128,10 +120,5 @@ public class LessonScraper {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    // Method for debugging to the console.
-    private void log(String msg, String... vals) {
-        System.out.println(String.format(msg, vals));
     }
 }

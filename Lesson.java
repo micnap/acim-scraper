@@ -42,11 +42,14 @@ public class Lesson implements Comparable {
     public void setHtml(String html) {
         this.html = html;
     }
-
+    
+    /*
+     * Sorts an array of lessons by their ID ascending.
+     */
     @Override
     public int compareTo(Object lesson) {
+        
         int compareId = ((Lesson)lesson).getId();
-        /* For Ascending order*/
         return this.id - compareId;
     }
 }

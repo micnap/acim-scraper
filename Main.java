@@ -16,10 +16,13 @@ public class Main {
         
         LessonScraper lessonScraper = new LessonScraper(webUrl, domQuery);
         
-        long startTime = System.nanoTime();
-        lessonScraper.scrape();
-        long endTime = System.nanoTime();
+        // Performance testing timer.
+         long startTime = System.nanoTime();
         
-        System.out.println("Total time: " + ((endTime - startTime)/1000000) + " milliseconds");
+        lessonScraper.scrape();
+        
+        // Performance testing timer.
+         long endTime = System.nanoTime();
+         System.out.println("Total time: " + ((endTime - startTime)/1000000) + " milliseconds");
     }
 }
