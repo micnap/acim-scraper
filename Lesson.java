@@ -1,7 +1,7 @@
 /*
  * Lesson POJO class for ACIM lessons.
  */
-public class Lesson implements Comparable {
+public class Lesson implements Comparable<Lesson> {
     
     // Properties.
     private int id;
@@ -47,7 +47,7 @@ public class Lesson implements Comparable {
      * Sorts an array of lessons by their ID ascending.
      */
     @Override
-    public int compareTo(Object lesson) {
+    public int compareTo(Lesson lesson) {
         
         int compareId = ((Lesson)lesson).getId();
         return this.id - compareId;
