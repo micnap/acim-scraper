@@ -1,11 +1,6 @@
 # A Course in Miracles Scraper
 The Course in Miracles is a book in the public domain that is made up of several parts. This program works with the Workbook part which consists of [361 lessons](https://en.wikisource.org/wiki/A_Course_in_Miracles/Workbook_for_Students). It scrapes and parses all the lessons and stores them to a file on disk as JSON objects so that they can then be loaded into a Room/SQLite database during the installation process of an Android app.
 
-The program uses:
-1. JSoup library for extracting and parsing the needed pieces of the lessons.
-2. Gson library for converting the Lesson objects to JSON. 
-3. Runnable interface for multithreaded performance.
-
 ## Files
 **Main.java**
 The entry point of the program.
