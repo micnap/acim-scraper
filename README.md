@@ -3,7 +3,7 @@ The Course in Miracles is a book in the public domain that is made up of several
 
 ## Files
 **Main.java**
-The entry point of the program.
+- The entry point of the program.
 
 **Lesson.java**
 - The POJO class for the Lessons objects.
