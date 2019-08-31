@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -30,6 +31,7 @@ public class LessonScraper {
     
     private static final String OUTPUT_FILE_NAME = "lessons.json";
     private static final int NUM_THREADS = 30;
+    private static final int TERMINATION_TIME = 60;
     
     // Constructor.
     public LessonScraper(String url, String query) {
@@ -84,9 +86,15 @@ public class LessonScraper {
         }
         
         executor.shutdown();
-        while (!executor.isTerminated()) {}
+        
+        // Wait for all threads to complete.  
+        // If they're not done in 60 seconds, there's something wrong! 
+        try {
+            executor.awaitTermination(TERMINATION_TIME,TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
-    
     
     // Converts an arraylist of lessons to JSON and writes to a file.
     private void printJson(CopyOnWriteArrayList<Lesson> lessonsArrayList) {

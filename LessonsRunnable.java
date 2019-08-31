@@ -11,7 +11,7 @@ import org.jsoup.select.NodeFilter;
 
 /*
  * This class makes the network requests to the individual lesson pages
- * using LessonScraper.NUM_THREADS number of threads and saves the lesson 
+ * using [LessonScraper.NUM_THREADS] number of threads and saves the lesson 
  * content to a thread-safe ArrayList.
  */
 public class LessonsRunnable implements Runnable {
@@ -33,7 +33,7 @@ public class LessonsRunnable implements Runnable {
     public void run() {
         
         // Log progress to the console.
-        System.out.println("Retrieving lesson " + lessonNum);
+        System.out.println(Thread.currentThread().getName() + ": Retrieving Lesson " + lessonNum);
         
         // Extracting lesson title from link to lesson.
         String lessonTitle = lessonUrl.text();
@@ -43,9 +43,6 @@ public class LessonsRunnable implements Runnable {
         
         // Add the lesson data to the arraylist
         lessons.add(new Lesson(lessonNum, lessonTitle, lessonHtml));
-        
-        // Debugging message
-        // System.out.println(Thread.currentThread().getName() + " - Lesson " + lessonNum + ": " + lessonTitle);
     }
     
     // Get the lesson's HTML content form the individual lesson page.
