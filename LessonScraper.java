@@ -3,20 +3,21 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Comment;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
-import org.jsoup.select.NodeFilter;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 
 /*
- * This is the class that does all the work of scraping the pages for the data.
+ * This class does all the work of kicking off the scraping to various threads and
+ * then saves the lesson data to disk.
  * Uses JSoup library for extracting and parsing the needed pieces of the lessons.
  * Uses Gson library for converting the Lesson objects to JSON. 
  */
@@ -25,7 +26,12 @@ public class LessonScraper {
     private String mainUrl;
     private String domQuery;
     
+    // Thread-safe version of ArrayList.
+    CopyOnWriteArrayList<Lesson> lessons = new CopyOnWriteArrayList<Lesson>();
+    
     private static final String OUTPUT_FILE_NAME = "lessons.json";
+    private static final int NUM_THREADS = 30;
+    private static final int TERMINATION_TIME = 60;
     
     // Constructor.
     public LessonScraper(String url, String query) {
@@ -43,7 +49,7 @@ public class LessonScraper {
         Elements lessonUrls = getLessonUrls(mainUrl, domQuery);
         
         // Extracts the lesson data from the lesson pages and stores as Lesson objects in an arraylist.
-        ArrayList<Lesson> lessons = getLessons(lessonUrls);
+        getLessons(lessonUrls);
 
         // Prints the arraylist of lessons to a JSON file.
         printJson(lessons);
@@ -53,130 +59,62 @@ public class LessonScraper {
     private Elements getLessonUrls(String url, String domQuery) {
         
         // Load the main page with the list of lessons. 
-        Document doc = getPage(url);
+        Document doc = LessonsRunnable.getPage(url);
  
         // Grab the the links to the lessons.
         return doc.select(domQuery);
     }
     
-    // Extracts and parses the lesson data from their individual pages.
-    private ArrayList<Lesson> getLessons(Elements lessonUrls) {
+    // Extracts and parses the lesson data from their individual pages using NUM_THREADS threads.
+    // The use of threads reduces the overhead of the network requests significantly.
+    private void getLessons(Elements lessonUrls) {
         
-        // Temporary storage of lessons.
-        ArrayList<Lesson> lessons = new ArrayList<>();
+        ExecutorService executor = Executors.newFixedThreadPool(NUM_THREADS);
         
         // Iterate through the lesson urls to load the lesson page and extract, parse, and save the lesson content.
         // The lesson number and title come from the main list of lessons, and the lesson content come from
         // drilling down into each lesson page and extracting and manipulating/parsing the HTML for each less page.
         for (int i = 0; i < lessonUrls.size(); i++) {
             
-            int lessonNum = i + 1;
+            Runnable worker = new LessonsRunnable(lessonUrls.get(i), i + 1, lessons);
+            executor.execute(worker);
             
-            // Log progress to the console.
-            System.out.println("Retrieving lesson " + lessonNum);
-            
-            Element lessonUrl = lessonUrls.get(i);
-            
-            // Extracting lesson title from link to lesson.
-            String lessonTitle = lessonUrl.text();
-            
-            // Get the lesson's html content.
-            String lessonHtml = getLessonHtml(lessonUrl.absUrl("href"));
-            
-            // Add the lesson data to the arraylist
-            lessons.add(new Lesson(lessonNum, lessonTitle, lessonHtml));
-
             // Debugging purposes.
-            if (i == 15) {
+            /*if (i == 15) {
                 break;
-            }
+            }*/
         }
         
-        return lessons;
-    }
-    
-    // Get the lesson's HTML content form the individual lesson page.
-    private String getLessonHtml(String url) {
+        executor.shutdown();
         
-        // Load the lesson page.
-        Document lessonPage = getPage(url);
-        // Parse the lesson content to give us only the piece we need.
-        return parseLessonPage(lessonPage);
-    }
-    
-    // Helper method for loading a page's content via JSoup.
-    private Document getPage(String url) {
+        // Wait for all threads to complete.  
+        // If they're not done in 60 seconds, there's something wrong! 
         try {
-            return Jsoup.connect(url).get();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
+            executor.awaitTermination(TERMINATION_TIME,TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        return null;
-    }
-    
-    // Extracts and parses the lesson content from the lesson page.
-    private String parseLessonPage(Document lessonPage) {
-        
-        // Extract the lesson from the lesson page and remove its headerContainer.
-        Elements lessonTextElements = lessonPage.select("div.mw-parser-output");
-        for( Element element : lessonTextElements.select("#headerContainer") ) {
-            element.remove();
-        }
-        
-        // Iterate through the components that make up the lesson text and remove all the comments.
-        // We just want the naked HTML for the lesson.
-        String lessonContent = "";
-        for (Element lessonText : lessonTextElements) {
-            removeComments(lessonText);
-            lessonContent = lessonText.html();
-        }
-        return lessonContent;
-    }
-    
-    // The site adds some hidden comments to the portion of the page that contains the 
-    // lesson text.  This method filters those comments from the text.
-    private void removeComments(Element article) {
-        
-        // Filter by passing in a NodeFilter object and overriding the appropriate methods.
-        article.filter(new NodeFilter() {
-            
-            @Override
-            public FilterResult head(Node node, int depth) {
-                // Remove comments.
-                if (node instanceof Comment) {
-                    return FilterResult.REMOVE;
-                }
-                return FilterResult.CONTINUE;
-            }
-            
-            @Override
-            public FilterResult tail(Node node, int depth) {
-                // Remove comments.
-                if (node instanceof Comment) {
-                    return FilterResult.REMOVE;
-                }
-                return FilterResult.CONTINUE;
-            }
-        });
     }
     
     // Converts an arraylist of lessons to JSON and writes to a file.
-    private void printJson(ArrayList<Lesson> lessons) {
+    private void printJson(CopyOnWriteArrayList<Lesson> lessonsArrayList) {
 
-        String jsonOutPut = buildJsonOutput(lessons);
+        // Because of the multithreading, the lessons don't get added in the order of their id.
+        // Sort them then convert to json.
+        Collections.sort(lessonsArrayList);
+        String jsonOutPut = buildJsonOutput(lessonsArrayList);
         writeToFile(jsonOutPut);
     }
     
     // Converts arraylist of Lesson objects to JSON.
-    private String buildJsonOutput(ArrayList<Lesson> lessons) {
+    private String buildJsonOutput(CopyOnWriteArrayList<Lesson> lessons2) {
      
         // Prevent Gson from encoding HTML characters.
         GsonBuilder gsonBuilder = new GsonBuilder().disableHtmlEscaping();
         
         // Tells Gson to turn the arraylist of Lessons to JSON objects.
         Type listOfLessonObject = new TypeToken<ArrayList<Lesson>>(){}.getType();
-        return gsonBuilder.create().toJson(lessons, listOfLessonObject);
+        return gsonBuilder.create().toJson(lessons2, listOfLessonObject);
     }
     
     // Writes JSON to a file.
@@ -190,10 +128,5 @@ public class LessonScraper {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    // Method for debugging to the console.
-    private void log(String msg, String... vals) {
-        System.out.println(String.format(msg, vals));
     }
 }

@@ -15,6 +15,14 @@ public class Main {
         String domQuery = ".mw-parser-output dl dd a";
         
         LessonScraper lessonScraper = new LessonScraper(webUrl, domQuery);
+        
+        // Performance testing timer.
+         long startTime = System.nanoTime();
+        
         lessonScraper.scrape();
+        
+        // Performance testing timer.
+         long endTime = System.nanoTime();
+         System.out.println("Total time: " + ((endTime - startTime)/1000000) + " milliseconds");
     }
 }
