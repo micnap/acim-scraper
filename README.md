@@ -18,7 +18,7 @@ The Course in Miracles is a book in the public domain that is made up of several
 
 **LessonsRunnable.java**
 - Making a network request for every single lesson is expensive. This class implements the Runnable interface so the requests can be done using many threads simultaneously, reducing the run time from about 35 seconds as a single threaded process to about 4 seconds given my machine and internet connection.
-- The number of threads used is set by LessonScraper.NUM_THREADS - the optimum for my machine and connection seems to be around 30 threads.  Much more or much less appear to give diminishing returns.  I'm guessing the bottleneck is the lock required for adding the lessons to the arraylist shared between the threads.
+- The number of threads used is set by LessonScraper.NUM_THREADS - the optimum for my machine and connection seems to be around 30 threads.  Much more or much less appear to give diminishing returns.  I'm guessing the bottleneck is either the lock required for adding the lessons to the ArrayList shared between the threads or, more likely, my current internet connection.  The next step in performance testing would be find a faster internet connection and test.  If performance doesn't get better than 3 or 4 seconds, convert from using the Runnable interface to Callable interface where an ArrayList per thread could be used and returned and then combined.
 
 ## Libraries
 [Gson](https://github.com/google/gson) - Java serialization/deserialization library to convert Java Objects into JSON and back
